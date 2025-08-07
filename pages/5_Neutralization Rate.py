@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 import plotly.express as px
 from shapely.geometry import Polygon, MultiPolygon
 
-st.markdown("Use the sidebar to navigate between pages.")
+
 
 df = pd.read_csv('data/cleaned_FPS2.csv')
 mis_type = pd.read_csv('data/missiles_and_uav.csv')
