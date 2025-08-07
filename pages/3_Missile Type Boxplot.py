@@ -21,6 +21,8 @@ import matplotlib.pyplot as plt
 import plotly.express as px
 from shapely.geometry import Polygon, MultiPolygon
 
+st.markdown("Looking at the spread of missile types, UAVs were the most common missile, and have a high median neutralization rate. Ballistic missiles and surface-to-air missiles have the lowest median neutralization rates. We set cruise missiles as the baseline dummy variable because it had the greatest range.")
+
 df = pd.read_csv('data/cleaned_FPS2.csv')
 mis_type = pd.read_csv('data/missiles_and_uav.csv')
 launched_geom = pd.read_csv('data/launched_geom2.csv')

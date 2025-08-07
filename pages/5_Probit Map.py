@@ -21,6 +21,8 @@ import matplotlib.pyplot as plt
 import plotly.express as px
 from shapely.geometry import Polygon, MultiPolygon
 
+st.markdown("In the below map, we display statistically significant mean predictions at the 95% confidence level. Launched regions with the highest neutralization rates include Olenya (90%), Volograd (89.6%), and the Caspian Sea (84.5%). Locations with the lowest neutralization rates include Rostov (11.7%), Tula (6.5%), and Donetsk (2.9%).")
+
 df = pd.read_csv('data/cleaned_FPS2.csv')
 mis_type = pd.read_csv('data/missiles_and_uav.csv')
 launched_geom = pd.read_csv('data/launched_geom2.csv')
