@@ -21,6 +21,8 @@ import matplotlib.pyplot as plt
 import plotly.express as px
 from shapely.geometry import Polygon, MultiPolygon
 
+st.subheader("Choropleth Map (Number of Launches)")
+
 df = pd.read_csv('data/cleaned_FPS2.csv')
 mis_type = pd.read_csv('data/missiles_and_uav.csv')
 launched_geom = pd.read_csv('data/launched_geom2.csv')
@@ -337,8 +339,7 @@ fig_choropleth = px.choropleth_mapbox(
     zoom=4,
     opacity=0.6,
     hover_data=None,
-    custom_data=['hover_text'],
-    title="Choropleth Map (Number of Launches)"
+    custom_data=['hover_text']
 )
 fig_choropleth.update_layout(height=700) 
 fig_choropleth.update_traces(

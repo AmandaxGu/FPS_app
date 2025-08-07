@@ -1,28 +1,17 @@
 import pandas as pd
+import geopandas as gpd
+from shapely.geometry import Point, LineString, GeometryCollection
+import streamlit as st
+import pydeck as pdk
+import pandas as pd
 import numpy as np
 import os
 import streamlit as st
-import dtale
 import re
-import plotly.express as px
-import statsmodels
-from geopandas import GeoDataFrame
-
-import statsmodels.api as sm
-import statsmodels.formula.api as smf
 from statsmodels.stats.sandwich_covariance import cov_hc0, cov_hc1
 from statsmodels.formula.api import ols
-import statsmodels.api as sm
-from patsy.contrasts import Treatment
-import folium
-from shapely import wkt
-import geopandas as gpd
-import matplotlib.pyplot as plt
-import plotly.express as px
-from shapely.geometry import Polygon, MultiPolygon
+from shapely.geometry import GeometryCollection
 
-st.subheader("Neutralization Rate by Missile Type")
-st.markdown("Looking at the spread of missile types, UAVs were the most common missile, and have a high median neutralization rate. Ballistic missiles and surface-to-air missiles have the lowest median neutralization rates.")
 df = pd.read_csv('data/cleaned_FPS2.csv')
 mis_type = pd.read_csv('data/missiles_and_uav.csv')
 launched_geom = pd.read_csv('data/launched_geom2.csv')
@@ -158,12 +147,13 @@ sd_launch = np.std(df_mis['launched'])
 
 df_unfiltered = df_mis
 
-
+df_mis_try = df_mis.groupby('launch_place', as_index=False)['launched'].sum()
+df_filtered = df_mis_try[df_mis_try['launched'] > 25]
 #display(df_filtered)
 #dtale.show(df_mis_try).open_browser()
 
 df_mis['neutralized'] = pd.to_numeric(df_mis['neutralized'], errors='coerce')
-
+df_mis = df_mis[df_mis['launch_place'].isin(df_filtered['launch_place'])]
 df_mis = df_mis[df_mis['neutralized']<= 1]
 
 ######
@@ -184,32 +174,128 @@ df_mis = df_mis.merge(monthly_sd, on='date_month', how='left')
 df_mis['is_salvo_month'] = (df_mis['launched'] >= df_mis['salvo_month']).astype(int)
 #df_mis[['is_salvo_month', 'date_month', 'salvo_month', 'launched']]
 
-df_mis['distance'] = pd.to_numeric(df_mis['distance'])
-df_mis['duration_sec'] = df_mis['duration'].dt.total_seconds()
-df_mis['Duration (min)'] = df_mis['duration_sec']/60
-df_mis = df_mis[df_mis['neutralized'] <=1]
-df_mis['Neutralization Rate (%)'] = df_mis['neutralized']*100
-df_mis["Category of Missile"] = df_mis['category']
-#############################
-# Missile boxplot
 
-fig_box = px.box(df_mis, x='Category of Missile', y='Neutralization Rate (%)')
-# Compute counts per category
-counts = df_mis['Category of Missile'].value_counts()
+# ------------------------------
+# Function: Initialize Geometries
+# ------------------------------
+def initialize_geometries_vectorized(df):
+    df = df[df['affected_region1'].notna()].copy()
 
-# Add count annotations above each category
-for i, cat in enumerate(counts.index):
-    fig_box.add_annotation(
-        x=cat,
-        y=105,  # slightly above your y-axis max
-        text=f"n={counts[cat]}",
-        showarrow=False,
-        font=dict(size=12),
-        yanchor='bottom'
-    )
+    # Launch geometries
+    mask_launch = df['lon_launch'].notna() & df['lat_launch'].notna()
+    df.loc[mask_launch, 'geom_launch'] = gpd.points_from_xy(df.loc[mask_launch, 'lon_launch'], df.loc[mask_launch, 'lat_launch'])
+    df.loc[~mask_launch, 'geom_launch'] = GeometryCollection()
 
-# Optional: Extend y-axis to fit annotations
-fig_box.update_layout(yaxis=dict(range=[0, 110]))
-st.plotly_chart(fig_box, use_container_width=True)
+    # Affected geometries
+    for i in range(1, 11):
+        lon_col = f'lon_aff_{i}'
+        lat_col = f'lat_aff_{i}'
+        geom_col = f'geom_aff_{i}'
 
-##############################
+        mask = df[lon_col].notna() & df[lat_col].notna()
+        df.loc[mask, geom_col] = gpd.points_from_xy(df.loc[mask, lon_col], df.loc[mask, lat_col])
+        df.loc[~mask, geom_col] = GeometryCollection()
+
+    return df
+
+# ------------------------------
+# Load and process your data
+# ------------------------------
+
+# Replace with your own loaded data
+# df_affected = pd.read_csv("your_data.csv")
+# df_empty_aff = pd.read_csv("your_other_data.csv")
+
+# For demonstration, we assume df_affected and df_empty_aff are already available
+combined_df = pd.concat([df_affected, df_empty_aff], ignore_index=True)
+new_aff = initialize_geometries_vectorized(combined_df)
+
+# ------------------------------
+# Build launch and affected GeoDataFrames
+# ------------------------------
+
+affected_sfs = []
+for i in range(1, 10):
+    geom_col = f'geom_aff_{i}'
+    region_col = f'affected_region{i}'
+    if geom_col in new_aff.columns and region_col in new_aff.columns:
+        aff = new_aff.loc[~new_aff[geom_col].isna()]
+        aff = aff.loc[aff[geom_col].map(lambda g: not g.is_empty)]
+        aff_gdf = gpd.GeoDataFrame(
+            aff[[region_col, geom_col]].rename(columns={region_col: 'region'}),
+            geometry=geom_col,
+            crs="EPSG:4326"
+        )
+        affected_sfs.append(aff_gdf)
+
+launch_sf = gpd.GeoDataFrame(
+    new_aff.loc[~new_aff['geom_launch'].isna() & new_aff['geom_launch'].map(lambda g: not g.is_empty)].copy(),
+    geometry='geom_launch',
+    crs="EPSG:4326"
+)
+
+# ------------------------------
+# Create Line GeoDataFrame
+# ------------------------------
+
+# Combine affected points
+affected_sfs_renamed = [gdf.rename_geometry('geometry') for gdf in affected_sfs]
+all_aff_points = gpd.GeoDataFrame(pd.concat(affected_sfs_renamed, ignore_index=True), crs="EPSG:4326")
+
+# Prepare columns
+launch_points = launch_sf[['launch_place', 'geom_launch', 'launched']].rename(columns={'geom_launch': 'geometry_launch'})
+all_aff_points = all_aff_points.rename(columns={'geometry': 'geometry_aff'})
+
+# Cross join
+cross = launch_points.merge(all_aff_points, how='cross')
+cross['geometry'] = [LineString([launch, aff]) for launch, aff in zip(cross['geometry_launch'], cross['geometry_aff'])]
+
+lines_gdf = gpd.GeoDataFrame(
+    cross[['launch_place', 'launched', 'region', 'geometry']],
+    geometry='geometry',
+    crs="EPSG:4326"
+).rename(columns={'region': 'region_name'})
+
+# ------------------------------
+# Convert for PyDeck
+# ------------------------------
+
+lines_df = pd.DataFrame({
+    'start_lon': lines_gdf.geometry.apply(lambda g: g.coords[0][0]),
+    'start_lat': lines_gdf.geometry.apply(lambda g: g.coords[0][1]),
+    'end_lon': lines_gdf.geometry.apply(lambda g: g.coords[1][0]),
+    'end_lat': lines_gdf.geometry.apply(lambda g: g.coords[1][1]),
+    'launch_place': lines_gdf['launch_place'],
+    'region_name': lines_gdf['region_name'],
+    'launched': lines_gdf['launched'].fillna(1)
+})
+
+# ------------------------------
+# Streamlit + PyDeck Display
+# ------------------------------
+
+st.title("Missile Launch → Impact Dyads")
+
+line_layer = pdk.Layer(
+    "LineLayer",
+    data=lines_df,
+    get_source_position=["start_lon", "start_lat"],
+    get_target_position=["end_lon", "end_lat"],
+    get_width="launched",
+    get_color=[255, 0, 0, 120],
+    pickable=True,
+    auto_highlight=True
+)
+
+view_state = pdk.ViewState(
+    longitude=lines_df['start_lon'].mean(),
+    latitude=lines_df['start_lat'].mean(),
+    zoom=5.5,
+    pitch=0
+)
+
+st.pydeck_chart(pdk.Deck(
+    layers=[line_layer],
+    initial_view_state=view_state,
+    tooltip={"text": "Launch: {launch_place}\nImpact: {region_name}\nLaunched: {launched}"}
+))

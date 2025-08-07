@@ -21,7 +21,8 @@ import matplotlib.pyplot as plt
 import plotly.express as px
 from shapely.geometry import Polygon, MultiPolygon
 
-
+st.subheader("Neutralization Rate by Duration")
+st.markdown("There are many outliers with either 0 or 1 neutralization rates that are skewing our data due to the small total number of missiles launched per region. This is one of the main reasons that OLS estimates go out of bounds. We correct for this by using the probit model.")
 
 df = pd.read_csv('data/cleaned_FPS2.csv')
 mis_type = pd.read_csv('data/missiles_and_uav.csv')
@@ -153,7 +154,6 @@ fig = px.scatter(
     x="Duration (min)",
     y="Neutralization Rate (%)",
     color = "category",
-    title="Neutralization Rate by Duration",
     labels={
         "Duration (min)": "Duration (min)",
         "Neutralization Rate (%)": "Neutralization Rate (%)"
