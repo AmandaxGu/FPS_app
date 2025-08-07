@@ -1,8 +1,8 @@
+streamlit
 pandas
 numpy
-streamlit
 dtale
-plotly
+plotly-express
 statsmodels
 geopandas
 matplotlib

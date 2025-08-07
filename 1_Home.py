@@ -21,18 +21,10 @@ import matplotlib.pyplot as plt
 import plotly.express as px
 from shapely.geometry import Polygon, MultiPolygon
 
-PATH = r'C:\UChicago\2025 Summer Internship - CSIS\Firepower Strike\Data'
-path_to_file = os.path.join(PATH, 'cleaned_FPS2.csv')
-df = pd.read_csv(path_to_file)
-
-path_to_file = os.path.join(PATH, 'missiles_and_uav.csv')
-mis_type = pd.read_csv(path_to_file)
-
-path_to_file = os.path.join(PATH, 'launched_geom2.csv')
-launched_geom = pd.read_csv(path_to_file)
-
-path_to_file = os.path.join(PATH, 'probit_model2.csv')
-probit_df = pd.read_csv(path_to_file)
+df = pd.read_csv('data/cleaned_FPS2.csv')
+mis_type = pd.read_csv('data/missiles_and_uav.csv')
+launched_geom = pd.read_csv('data/launched_geom2.csv')
+probit_df = pd.read_csv('data/probit_model2.csv')
 
 # Data cleaning section
 df1 = df[df["launch_place"].notna()]
@@ -146,7 +138,6 @@ mis_type_clean['category'] = mis_type_clean['category'].apply(category)
 
 df_mis = pd.merge(df3, mis_type_clean, on='model', how='left')
 
-print(df_mis['neutralized'])
 df_mis['distance'] = pd.to_numeric(df_mis['distance'])
 df_mis['duration_sec'] = df_mis['duration'].dt.total_seconds()
 df_mis['Duration (min)'] = df_mis['duration_sec']/60

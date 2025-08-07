@@ -21,18 +21,10 @@ import matplotlib.pyplot as plt
 import plotly.express as px
 from shapely.geometry import Polygon, MultiPolygon
 
-PATH = r'C:\UChicago\2025 Summer Internship - CSIS\Firepower Strike\Data'
-path_to_file = os.path.join(PATH, 'cleaned_FPS2.csv')
-df = pd.read_csv(path_to_file)
-
-path_to_file = os.path.join(PATH, 'missiles_and_uav.csv')
-mis_type = pd.read_csv(path_to_file)
-
-path_to_file = os.path.join(PATH, 'launched_geom2.csv')
-launched_geom = pd.read_csv(path_to_file)
-
-path_to_file = os.path.join(PATH, 'probit_model2.csv')
-probit_df = pd.read_csv(path_to_file)
+df = pd.read_csv('data/cleaned_FPS2.csv')
+mis_type = pd.read_csv('data/missiles_and_uav.csv')
+launched_geom = pd.read_csv('data/launched_geom2.csv')
+probit_df = pd.read_csv('data/probit_model2.csv')
 
 # Data cleaning section
 df1 = df[df["launch_place"].notna()]
@@ -341,14 +333,14 @@ fig_choropleth = px.choropleth_mapbox(
     color_continuous_scale='Viridis',
     featureidkey='id',  # only works if `locations` match geojson "id"s (not needed if using __geo_interface__ correctly)
     mapbox_style='carto-positron',
-    center={"lat": 44.8, "lon": 33.6},
+    center={"lat": 47.8, "lon": 33.6},
     zoom=4,
     opacity=0.6,
     hover_data=None,
     custom_data=['hover_text'],
     title="Choropleth Map (Number of Launches)"
 )
-fig_choropleth.update_layout(height=800) 
+fig_choropleth.update_layout(height=700) 
 fig_choropleth.update_traces(
     hovertemplate="%{customdata[0]}<extra></extra>"
 )
