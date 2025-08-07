@@ -20,17 +20,8 @@ import geopandas as gpd
 import matplotlib.pyplot as plt
 import plotly.express as px
 from shapely.geometry import Polygon, MultiPolygon
-st.set_page_config(page_title="Home", layout="wide")
 
-st.title("Welcome to the Dashboard")
 
-with st.sidebar:
-    st.write("### Navigate to:")
-    st.page_link("pages/2_Probit_Model.py", "Probit Model")
-    st.page_link("pages/3_Choropleth.py", "Choropleth Map")
-    st.page_link("pages/4_Boxplot.py", "Boxplot")
-
-    
 df = pd.read_csv('data/cleaned_FPS2.csv')
 mis_type = pd.read_csv('data/missiles_and_uav.csv')
 launched_geom = pd.read_csv('data/launched_geom2.csv')
