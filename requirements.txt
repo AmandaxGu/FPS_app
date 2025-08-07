@@ -1,0 +1,10 @@
+pandas
+numpy
+streamlit
+dtale
+plotly
+statsmodels
+geopandas
+matplotlib
+folium
+shapely

@@ -1,0 +1,19 @@
+[[pages]]
+path = "FPS_neutralized.py"
+name = "Neutralization Rate"
+icon = "🏠"
+
+[[pages]]
+path = "FPS_graphs_boxplot.py"
+name = "Boxplot"
+icon = "📊"
+
+[[pages]]
+path = "FPS_graphs_choropleth.py"
+name = "Choropleth Map"
+icon = "🗺️"
+
+[[pages]]
+path = "FPS_graphs_probit.py"
+name = "Probit Model"
+icon = "📍"
