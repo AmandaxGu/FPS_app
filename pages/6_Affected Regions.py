@@ -260,14 +260,25 @@ lines_gdf = gpd.GeoDataFrame(
 # Convert for PyDeck
 # ------------------------------
 
+grouped_lines = (
+    lines_gdf
+    .groupby(['launch_place', 'region_name'])
+    .agg({
+        'launched': 'sum',
+        'geometry': 'first'  # any one LineString from the pair
+    })
+    .reset_index()
+)
+
+# Convert to PyDeck-friendly format
 lines_df = pd.DataFrame({
-    'start_lon': lines_gdf.geometry.apply(lambda g: g.coords[0][0]),
-    'start_lat': lines_gdf.geometry.apply(lambda g: g.coords[0][1]),
-    'end_lon': lines_gdf.geometry.apply(lambda g: g.coords[1][0]),
-    'end_lat': lines_gdf.geometry.apply(lambda g: g.coords[1][1]),
-    'launch_place': lines_gdf['launch_place'],
-    'region_name': lines_gdf['region_name'],
-    'launched': lines_gdf['launched'].fillna(1)
+    'start_lon': grouped_lines.geometry.apply(lambda g: g.coords[0][0]),
+    'start_lat': grouped_lines.geometry.apply(lambda g: g.coords[0][1]),
+    'end_lon': grouped_lines.geometry.apply(lambda g: g.coords[1][0]),
+    'end_lat': grouped_lines.geometry.apply(lambda g: g.coords[1][1]),
+    'launch_place': grouped_lines['launch_place'],
+    'region_name': grouped_lines['region_name'],
+    'launched': grouped_lines['launched']
 })
 
 # ------------------------------
